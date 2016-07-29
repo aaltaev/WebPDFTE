@@ -1,0 +1,6 @@
+.idea
+out
+target
+*.iml
+src/main/webapp/static/js/libs
+src/main/webapp/static/examples
