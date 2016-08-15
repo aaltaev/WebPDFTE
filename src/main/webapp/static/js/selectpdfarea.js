@@ -115,7 +115,7 @@ function handlePages(page) {
  */
 function renderPage(page) {
     var viewport = page.getViewport(1);
-    var scale = document.getElementById("pdf").clientWidth / viewport.width;
+    var scale = window.innerHeight / viewport.height;
     viewport = page.getViewport(scale);
     var canvas = document.createElement('canvas');
     PageScope.getInstance().canvases[PageScope.getInstance().currPage] = canvas;
