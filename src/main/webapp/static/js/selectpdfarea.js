@@ -1,3 +1,46 @@
+var pdfFile = null;
+var currPage = 1;
+var numPages = 0;
+var pdfDoc = null;
+var canvases = [];
+var backgrounds = [];
+var x1 = 0;
+var x2 = 0;
+var y1 = 0;
+var y2 = 0;
+var isMouseDown = false;
+var inputs = [];
+var rectangles = [];
+
+function drop() {
+    var keys = Object.keys(canvases);
+    var exampleCanvases = [];
+    var exampleBackgrounds = [];
+    var exampleRectangles = [];
+    for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        if (key.includes("ex")) {
+            exampleCanvases[key] = canvases[key];
+            exampleBackgrounds[key] = backgrounds[key];
+            exampleRectangles[key] = rectangles[key];
+        }
+    }
+
+    pdfFile = null;
+    currPage = 1;
+    numPages = 0;
+    pdfDoc = null;
+    canvases = exampleCanvases;
+    backgrounds = exampleBackgrounds;
+    x1 = 0;
+    x2 = 0;
+    y1 = 0;
+    y2 = 0;
+    isMouseDown = false;
+    inputs = [];
+    rectangles = exampleRectangles;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////PDF FILE HANDLING////////////////////////////////////
@@ -33,8 +76,8 @@ function fileHandler() {
         [].forEach.call(pdfInput.files, function (f, i) {
             var reader = new FileReader();
             reader.onload = function (event) {
-                PageScope.getInstance().pdfFile = new Uint8Array(this.result);
-                handlePdf(PageScope.getInstance().pdfFile);
+                pdfFile = new Uint8Array(this.result);
+                handlePdf(pdfFile);
             };
             reader.readAsArrayBuffer(f);
         });
@@ -48,8 +91,8 @@ function fileHandler() {
  */
 function handlePdf(pdfFile) {
     PDFJS.getDocument(pdfFile).then(function (pdf) {
-        PageScope.getInstance().pdfDoc = pdf;
-        PageScope.getInstance().numPages = pdf.numPages;
+        pdfDoc = pdf;
+        numPages = pdf.numPages;
         pdf.getPage(1).then(handlePages);
     });
 }
@@ -65,21 +108,21 @@ function handlePages(page) {
     canvas.addEventListener('mousemove', mouseMoveHandler, false);
 
     var tab = document.createElement("a");
-    tab.href = "#" + PageScope.getInstance().currPage;
-    tab.innerHTML = PageScope.getInstance().currPage;
+    tab.href = "#" + currPage;
+    tab.innerHTML = currPage;
     var li = document.createElement("li");
     li.appendChild(tab);
 
     var tabContent = document.createElement("div");
     tabContent.classList.add("tab-pane");
-    tabContent.id = PageScope.getInstance().currPage;
-    if (PageScope.getInstance().currPage == 1) {
+    tabContent.id = currPage;
+    if (currPage == 1) {
         tabContent.classList.add("active");
         li.classList.add("active");
     }
     tabContent.appendChild(canvas);
     tabContent.appendChild(document.createElement('br'));
-    tabContent.appendChild(createDropButton(PageScope.getInstance().currPage));
+    tabContent.appendChild(createDropButton(currPage));
     tabContent.appendChild(document.createElement('br'));
     tabContent.appendChild(document.createElement('br'));
 
@@ -87,20 +130,20 @@ function handlePages(page) {
     document.getElementById("tab-content").appendChild(tabContent);
 
     var form = document.getElementById('pdfformhidden');
-    var xStartInput = createInput('startX', PageScope.getInstance().currPage);
-    var yStartInput = createInput('startY', PageScope.getInstance().currPage);
-    var xEndInput = createInput('endX', PageScope.getInstance().currPage);
-    var yEndInput = createInput('endY', PageScope.getInstance().currPage);
+    var xStartInput = createInput('startX', currPage);
+    var yStartInput = createInput('startY', currPage);
+    var xEndInput = createInput('endX', currPage);
+    var yEndInput = createInput('endY', currPage);
     form.appendChild(xStartInput);
     form.appendChild(yStartInput);
     form.appendChild(xEndInput);
     form.appendChild(yEndInput);
-    PageScope.getInstance().inputs.push(xStartInput, yStartInput, xEndInput, yEndInput);
+    inputs.push(xStartInput, yStartInput, xEndInput, yEndInput);
 
-    PageScope.getInstance().currPage++;
-    if (PageScope.getInstance().pdfDoc != null && PageScope.getInstance().currPage <= PageScope.getInstance().numPages) {
+    currPage++;
+    if (pdfDoc != null && currPage <= numPages) {
         //handling next page
-        PageScope.getInstance().pdfDoc.getPage(PageScope.getInstance().currPage).then(handlePages);
+        pdfDoc.getPage(currPage).then(handlePages);
     } else {
         // if no more pages, then add listeners to tab buttons
         $("#pdfTabs").find("a").click(function (e) {
@@ -118,8 +161,8 @@ function renderPage(page) {
     var scale = window.innerHeight / viewport.height;
     viewport = page.getViewport(scale);
     var canvas = document.createElement('canvas');
-    PageScope.getInstance().canvases[PageScope.getInstance().currPage] = canvas;
-    canvas.id = "pdfcanvas" + PageScope.getInstance().currPage;
+    canvases[currPage] = canvas;
+    canvas.id = "pdfcanvas" + currPage;
     canvas.style.border = '1px solid black';
     var ctx = canvas.getContext('2d');
     canvas.height = viewport.height;
@@ -137,7 +180,7 @@ function loadExample(id) {
     PDFJS.getDocument("http://cells.icc.ru/pdfte/static/examples/" + id + ".pdf").then(function (pdf) {
         pdf.getPage(1).then(function (page) {
             var canvas = document.getElementById("pdfcanvasex" + id);
-            PageScope.getInstance().canvases["ex" + id] = canvas;
+            canvases["ex" + id] = canvas;
             var ctx = canvas.getContext("2d");
             var viewport = page.getViewport(1);
             var scale = (document.getElementById("pdf").clientWidth - 100) / viewport.width;
@@ -145,7 +188,7 @@ function loadExample(id) {
             canvas.height = viewport.height;
             canvas.width = viewport.width;
             page.render({canvasContext: ctx, viewport: viewport}).promise.then(function () {
-                PageScope.getInstance().backgrounds["ex" + id]
+                backgrounds["ex" + id]
                     = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
                 var rectangle = new Rectangle();
                 var coords = getExampleCoordinates(id);
@@ -153,8 +196,8 @@ function loadExample(id) {
                 rectangle.x2 = coords.x2 * canvas.width;
                 rectangle.y1 = canvas.height - coords.y2 * canvas.height;
                 rectangle.y2 = canvas.height - coords.y1 * canvas.height;
-                PageScope.getInstance().rectangles["ex" + id] = rectangle;
-                rectangle.draw(canvas, PageScope.getInstance().backgrounds["ex" + id]);
+                rectangles["ex" + id] = rectangle;
+                rectangle.draw(canvas, backgrounds["ex" + id]);
                 writeParametersForExample(id);
             });
             canvas.addEventListener('mousedown', mouseDownHandler, false);
@@ -171,7 +214,7 @@ function loadExample(id) {
 
 function writeParametersForExample(id) {
     var canvas = document.getElementById("pdfcanvasex" + id);
-    var rect = PageScope.getInstance().rectangles["ex" + id];
+    var rect = rectangles["ex" + id];
     var x1 = rect.x1, x2 = rect.x2, y1 = rect.y1, y2 = rect.y2;
     y1 = canvas.height - y1;
     y2 = canvas.height - y2;
@@ -394,15 +437,15 @@ function Rectangle() {
 function mouseDownHandler(event) {
     if (event.button == 0) {
         var id = event.target.id.replace('pdfcanvas', '');
-        var canvas = PageScope.getInstance().canvases[id];
-        if (PageScope.getInstance().backgrounds[id] == null) {
-            PageScope.getInstance().backgrounds[id] = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+        var canvas = canvases[id];
+        if (backgrounds[id] == null) {
+            backgrounds[id] = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
         }
-        if (PageScope.getInstance().rectangles[id] == null) {
-            PageScope.getInstance().x1 = event.pageX - getCoords(canvas).left;
-            PageScope.getInstance().y1 = event.pageY - getCoords(canvas).top;
+        if (rectangles[id] == null) {
+            x1 = event.pageX - getCoords(canvas).left;
+            y1 = event.pageY - getCoords(canvas).top;
         }
-        PageScope.getInstance().isMouseDown = true;
+        isMouseDown = true;
     }
 }
 
@@ -411,38 +454,30 @@ function mouseDownHandler(event) {
  */
 function mouseMoveHandler(event) {
     var id = event.target.id.replace('pdfcanvas', '');
-    var canvas = PageScope.getInstance().canvases[id];
+    var canvas = canvases[id];
     var mouseX = event.pageX - getCoords(canvas).left;
     var mouseY = event.pageY - getCoords(canvas).top;
-    if (PageScope.getInstance().isMouseDown) {
-        if (PageScope.getInstance().rectangles[id] == null) {
-            PageScope.getInstance().x2 = event.pageX - getCoords(canvas).left;
-            PageScope.getInstance().y2 = event.pageY - getCoords(canvas).top;
+    if (isMouseDown) {
+        if (rectangles[id] == null) {
+            x2 = event.pageX - getCoords(canvas).left;
+            y2 = event.pageY - getCoords(canvas).top;
             var newRectangle = new Rectangle();
-            newRectangle.x1 = PageScope.getInstance().x1 < PageScope.getInstance().x2
-                ? PageScope.getInstance().x1
-                : PageScope.getInstance().x2;
-            newRectangle.y1 = PageScope.getInstance().y1 < PageScope.getInstance().y2
-                ? PageScope.getInstance().y1
-                : PageScope.getInstance().y2;
-            newRectangle.x2 = PageScope.getInstance().x1 > PageScope.getInstance().x2
-                ? PageScope.getInstance().x1
-                : PageScope.getInstance().x2;
-            newRectangle.y2 = PageScope.getInstance().y1 > PageScope.getInstance().y2
-                ? PageScope.getInstance().y1
-                : PageScope.getInstance().y2;
-            newRectangle.draw(canvas, PageScope.getInstance().backgrounds[id]);
+            newRectangle.x1 = x1 < x2 ? x1 : x2;
+            newRectangle.y1 = y1 < y2 ? y1 : y2;
+            newRectangle.x2 = x1 > x2 ? x1 : x2;
+            newRectangle.y2 = y1 > y2 ? y1 : y2;
+            newRectangle.draw(canvas, backgrounds[id]);
         } else {
-            var resizableRectangle = PageScope.getInstance().rectangles[id];
+            var resizableRectangle = rectangles[id];
             resizableRectangle.clicked = true;
             if (resizableRectangle.getDragDirection(mouseX, mouseY) != resizableRectangle.dragDirections.NONE) {
                 resizableRectangle.resize(mouseX, mouseY);
-                resizableRectangle.draw(canvas, PageScope.getInstance().backgrounds[id]);
+                resizableRectangle.draw(canvas, backgrounds[id]);
             }
         }
     } else {
-        if (PageScope.getInstance().rectangles[id] != null) {
-            var rectangle = PageScope.getInstance().rectangles[id];
+        if (rectangles[id] != null) {
+            var rectangle = rectangles[id];
             switch (rectangle.getDragDirection(mouseX, mouseY)) {
                 case rectangle.dragDirections.NORTH:
                     canvas.style.cursor = "n-resize";
@@ -482,43 +517,33 @@ function mouseMoveHandler(event) {
 function mouseUpHandler(event) {
     if (event.button == 0) {
         document.getElementById("submitBtn").disabled = true;
-        for (var i = 0; i < PageScope.getInstance().inputs.length; i++) {
-            if (PageScope.getInstance().inputs[i] != '') {
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i] != '') {
                 document.getElementById("submitBtn").disabled = false;
                 break;
             }
         }
 
         var id = event.target.id.replace('pdfcanvas', '');
-        var canvas = PageScope.getInstance().canvases[id];
+        var canvas = canvases[id];
         var rect;
-
-        if (PageScope.getInstance().rectangles[id] == null) {
+        if (rectangles[id] == null) {
             rect = new Rectangle();
-
-            rect.x1 = PageScope.getInstance().x1 < PageScope.getInstance().x2
-                ? PageScope.getInstance().x1
-                : PageScope.getInstance().x2;
-            rect.y1 = PageScope.getInstance().y1 < PageScope.getInstance().y2
-                ? PageScope.getInstance().y1
-                : PageScope.getInstance().y2;
-            rect.x2 = PageScope.getInstance().x1 > PageScope.getInstance().x2
-                ? PageScope.getInstance().x1
-                : PageScope.getInstance().x2;
-            rect.y2 = PageScope.getInstance().y1 > PageScope.getInstance().y2
-                ? PageScope.getInstance().y1
-                : PageScope.getInstance().y2;
-
+            rect.x1 = x1 < x2 ? x1 : x2;
+            rect.y1 = y1 < y2 ? y1 : y2;
+            rect.x2 = x1 > x2 ? x1 : x2;
+            rect.y2 = y1 > y2 ? y1 : y2;
             rect.clicked = false;
-            rect.draw(canvas, PageScope.getInstance().backgrounds[id]);
-            PageScope.getInstance().rectangles[id] = rect;
+            rect.draw(canvas, backgrounds[id]);
+            rectangles[id] = rect;
         }
-
-        rect = PageScope.getInstance().rectangles[id];
+        rect = rectangles[id];
         rect.clicked = false;
-        var x1 = rect.x1, x2 = rect.x2, y1 = rect.y1, y2 = rect.y2;
-        y1 = canvas.height - y1;
-        y2 = canvas.height - y2;
+
+        x1 = rect.x1;
+        x2 = rect.x2;
+        y1 = canvas.height - rect.y1;
+        y2 = canvas.height - rect.y2;
         var temp;
         if (x1 > x2) {
             temp = x1;
@@ -538,83 +563,8 @@ function mouseUpHandler(event) {
         } catch (e) {
         }
     }
-    PageScope.getInstance().isMouseDown = false;
+    isMouseDown = false;
 }
-
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////GLOBAL VARS//////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Singleton. Contains global variables such as lists of canvases,
- * backgrounds, selection rectangles, etc...
- */
-var PageScope = (function () {
-    var instance;
-
-    function createInstance() {
-        function PageScopeInstance() {
-            this.pdfFile = null;
-            this.currPage = 1;
-            this.numPages = 0;
-            this.pdfDoc = null;
-            this.canvases = [];
-            this.backgrounds = [];
-            this.x1 = 0;
-            this.x2 = 0;
-            this.y1 = 0;
-            this.y2 = 0;
-            this.isMouseDown = false;
-            this.inputs = [];
-            this.rectangles = [];
-
-            this.reset = function () {
-                var keys = Object.keys(this.canvases);
-                var exampleCanvases = [];
-                var exampleBackgrounds = [];
-                var exampleRectangles = [];
-                for (var i = 0; i < keys.length; i++) {
-                    var key = keys[i];
-                    if (key.includes("ex")) {
-                        exampleCanvases[key] = this.canvases[key];
-                        exampleBackgrounds[key] = this.backgrounds[key];
-                        exampleRectangles[key] = this.rectangles[key];
-                    }
-                }
-
-                this.pdfFile = null;
-
-                this.currPage = 1;
-                this.numPages = 0;
-                this.pdfDoc = null;
-                this.canvases = exampleCanvases;
-                this.backgrounds = exampleBackgrounds;
-                this.x1 = 0;
-                this.x2 = 0;
-                this.y1 = 0;
-                this.y2 = 0;
-                this.isMouseDown = false;
-                this.inputs = [];
-                this.rectangles = exampleRectangles;
-            }
-        }
-
-        return new PageScopeInstance();
-    }
-
-    return {
-        getInstance: function () {
-            if (!instance) {
-                instance = createInstance();
-                instance.reset();
-            }
-            return instance;
-        }
-    };
-})();
-
 
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
@@ -632,7 +582,6 @@ function createInput(id, number) {
     input.name = input.id;
     return input;
 }
-
 
 /**
  * Returns the coordinates of element on page
@@ -664,15 +613,15 @@ function createDropButton(pageId) {
     dropBtn.innerHTML = "Drop selection";
     dropBtn.onclick = function () { //dropping the selection
         var id = this.id.replace('drop', '');
-        PageScope.getInstance().rectangles[id] = null;
-        PageScope.getInstance().canvases[id].getContext('2d').putImageData(PageScope.getInstance().backgrounds[id], 0, 0);
+        rectangles[id] = null;
+        canvases[id].getContext('2d').putImageData(backgrounds[id], 0, 0);
         document.getElementById('startX' + id).value = '';
         document.getElementById('startY' + id).value = '';
         document.getElementById('endX' + id).value = '';
         document.getElementById('endY' + id).value = '';
         document.getElementById("submitBtn").disabled = true;
-        for (var i = 0; i < PageScope.getInstance().rectangles.length; i++) {
-            if (PageScope.getInstance().rectangles[i] != null) {
+        for (var i = 0; i < rectangles.length; i++) {
+            if (rectangles[i] != null) {
                 document.getElementById("submitBtn").disabled = false;
                 break;
             }
@@ -685,7 +634,7 @@ function createDropButton(pageId) {
  * Skips all global variables and clears all forms
  */
 function reset() {
-    PageScope.getInstance().reset();
+    drop();
     document.getElementById("pdf").innerHTML = '';
     document.getElementById("pdfformhidden").innerHTML = '';
     document.getElementById("pdfLabel").innerHTML = 'No file selected';
