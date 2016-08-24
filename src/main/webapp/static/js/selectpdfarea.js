@@ -1,4 +1,3 @@
-var pdfFile = null;
 var currPage = 1;
 var numPages = 0;
 var pdfDoc = null;
@@ -26,7 +25,6 @@ function drop() {
         }
     }
 
-    pdfFile = null;
     currPage = 1;
     numPages = 0;
     pdfDoc = null;
@@ -58,7 +56,7 @@ function fileHandler() {
         var description = document.createElement('p');
         description.classList.add("lead");
         description.classList.add("text-justify");
-        description.innerHTML = "Please select area for table extraction on each page. If you want to skip page, make no selection";
+        description.innerHTML = "Please select area using the mouse on each page. If you want to skip page, make no selection";
         var pdfDiv = document.getElementById('pdf');
         pdfDiv.appendChild(description);
 
@@ -76,7 +74,7 @@ function fileHandler() {
         [].forEach.call(pdfInput.files, function (f, i) {
             var reader = new FileReader();
             reader.onload = function (event) {
-                pdfFile = new Uint8Array(this.result);
+                var pdfFile = new Uint8Array(this.result);
                 handlePdf(pdfFile);
             };
             reader.readAsArrayBuffer(f);

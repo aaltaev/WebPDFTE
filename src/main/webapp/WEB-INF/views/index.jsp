@@ -6,10 +6,7 @@
     <script src='<c:url value="/static/js/selectpdfarea.js"/>'></script>
 
     <p class="lead text-justify">
-        This is an early prototype of tool for table extraction from PDF documents.
-        It does not detect tables, so it's necessary to specify the area from which
-        you want to extract the table. Also, that tool can't do OCR, therefore
-        scanned PDFs are not supported.
+        Simply extract tables from PDF files and convert to Excel format
     </p>
 
     <form id="pdfform" name="pdfform" enctype="multipart/form-data" method="post">
@@ -18,7 +15,7 @@
             <input type="file" id="inpdf" name="inpdf" accept=".pdf"
                    onchange="fileHandler()" style="display: none"/>
             <button type="button" class="btn btn-default" onclick="document.getElementById('inpdf').click()">
-                Browse&hellip;</button>
+                Select a PDF to extract a table&hellip;</button>
             <label id="pdfLabel" for="inpdf">No file selected</label>
         </div>
         <div class="form-group">
@@ -42,7 +39,7 @@
                 </div>
                 <div id="collapse<c:out value="${i}" />" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading<c:out value="${i}" />">
                     <div class="panel-body" id="pb<c:out value="${i}" />">
-                        <a id="link<c:out value="${i}" />" class="btn btn-primary" href="/pdfte/example?id=<c:out value="${i}" />">Try Example</a>
+                        <a id="link<c:out value="${i}" />" class="btn btn-primary" href="<c:url value="/pdfte/example?id='${i}'"/>">Try Example</a>
                         <canvas id="pdfcanvasex<c:out value="${i}" />">Обновите браузер</canvas>
                         <script>
                             loadExample("<c:out value="${i}" />");
