@@ -130,9 +130,6 @@ public class Extraction {
     public int hashCode() {
         int result = id != null ? id.hashCode() : 0;
         result = 31 * result + (pdfName != null ? pdfName.hashCode() : 0);
-        result = 31 * result + (htmlTable != null ? htmlTable.hashCode() : 0);
-        result = 31 * result + Arrays.hashCode(excelTable);
-        result = 31 * result + Arrays.hashCode(pdfFile);
         result = 31 * result + (extractionDate != null ? extractionDate.hashCode() : 0);
         result = 31 * result + (extractionTime != null ? extractionTime.hashCode() : 0);
         return result;
@@ -143,9 +140,6 @@ public class Extraction {
         return "Extraction{" +
                 "id=" + id +
                 ", pdfName='" + pdfName + '\'' +
-                ", htmlTable='" + htmlTable + '\'' +
-                ", excelTable=" + Arrays.toString(excelTable) +
-                ", pdfFile=" + Arrays.toString(pdfFile) +
                 ", extractionDate=" + extractionDate +
                 ", extractionTime=" + extractionTime +
                 '}';
