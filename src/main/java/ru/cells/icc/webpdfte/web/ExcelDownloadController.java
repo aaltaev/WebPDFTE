@@ -9,9 +9,7 @@ import ru.cells.icc.webpdfte.data.model.Extraction;
 import ru.cells.icc.webpdfte.data.service.ExtractionService;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 @Controller
 @RequestMapping("/excel")
@@ -22,14 +20,16 @@ public class ExcelDownloadController {
     @RequestMapping(method = RequestMethod.GET)
     public void downloadExcel(@RequestParam("id") int id, HttpServletResponse response) {
         Extraction extraction = extractionService.findById(id);
-        response.setContentType("application/octet-stream");
-        response.setHeader("Content-Disposition", String.format("inline; filename=\"" + extraction.getPdfName() + ".xlsx\""));
-        response.setContentLength(extraction.getExcelTable().length);
-        try {
-            response.getOutputStream().write(extraction.getExcelTable());
-            response.getOutputStream().close();
-        } catch (IOException e) {
-            return;
+        if (extraction != null) {
+            response.setContentType("application/octet-stream");
+            response.setHeader("Content-Disposition", "inline; filename=\"" + extraction.getPdfName() + ".xlsx\"");
+            response.setContentLength(extraction.getExcelTable().length);
+            try {
+                response.getOutputStream().write(extraction.getExcelTable());
+                response.getOutputStream().close();
+            } catch (IOException e) {
+                return;
+            }
         }
     }
 }
